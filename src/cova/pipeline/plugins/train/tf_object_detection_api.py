@@ -1,7 +1,7 @@
 """This module implements a COVATrainer to fine-tune models using TensorFlow's Object Detection API."""
 
-from cova.pipeline.pipeline import COVATrain
 from cova.dnn import train
+from cova.pipeline.pipeline import COVATrain
 
 
 class TFObjectDetectionAPI(COVATrain):

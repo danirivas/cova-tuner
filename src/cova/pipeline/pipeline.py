@@ -1,17 +1,16 @@
-from abc import ABC, abstractmethod
-import importlib
+import importlib.util
 import inspect
 import logging
 import os
-from pathlib import Path
 import sys
-from typing import NewType, Any, Tuple, Callable, Dict, List
-
+from abc import ABC, abstractmethod
+from pathlib import Path
+from typing import Any, Callable, NewType, Optional
 
 logger = logging.getLogger(__name__)
 
-Args = NewType("Args", Dict[str, Any])
-Stage = NewType("Stage", Tuple[str, Args])
+Args = NewType("Args", dict[str, Any])
+Stage = NewType("Stage", tuple[str, Args])
 
 PIPELINE = ["capture", "filter", "annotate", "dataset", "train"]
 CONSTRUCTORS = ["COVACapture", "COVAFilter", "COVAAnnotate", "COVADataset", "COVATrain"]
@@ -29,7 +28,7 @@ class COVAFactory:
         self.load_plugins(plugins_dir)
 
     @staticmethod
-    def _detect_class(module) -> Tuple[Callable, str]:
+    def _detect_class(module) -> Optional[tuple[Callable, str]]:
         """Detects the class the plugin implements and returns its constructor and its parent class."""
         for member in inspect.getmembers(module, inspect.isclass):
             # Has a COVA parent?
@@ -40,22 +39,37 @@ class COVAFactory:
         return None
 
     @staticmethod
-    def _load_plugin(plugin_file: str) -> Callable[..., Any]:
+    def _load_plugin(plugin_file: str) -> tuple[Callable, str]:
         """Loads a plugin from plugin_file containing the implementation of class_name class."""
         module_name = Path(plugin_file).stem
         spec = importlib.util.spec_from_file_location(module_name, plugin_file)
+        if spec is None:
+            raise ModuleNotFoundError(f"Could not load plugin from file {plugin_file}.")
+
         module = importlib.util.module_from_spec(spec)
+        if module is None:
+            logger.error("Could not load plugin from file %s.", plugin_file)
+            raise ModuleNotFoundError(f"Could not load plugin from file {plugin_file}.")
+
+        if spec.loader is None:
+            logger.error("Could not load plugin from file %s.", plugin_file)
+            raise ModuleNotFoundError(f"Could not load plugin from file {plugin_file}.")
+
         spec.loader.exec_module(module)
 
-        constructor = COVAFactory._detect_class(module)
-        if constructor is None:
-            logger.warning("Could not load plugin from module %s.", module.__name__)
-        else:
-            logger.info(
-                "Loaded plugin %s from module %s.",
-                constructor.__name__,
-                module.__name__,
+        ret = COVAFactory._detect_class(module)
+        if ret is None:
+            logger.error("Could not load plugin from module %s.", module.__name__)
+            raise ModuleNotFoundError(
+                f"Could not load plugin from module {module.__name__}."
             )
+
+        constructor, _ = ret
+        logger.info(
+            "Loaded plugin %s from module %s.",
+            constructor.__name__,
+            module.__name__,
+        )
         return constructor, module.__name__
 
     def load_plugins(self, plugins_path: str) -> None:
@@ -66,12 +80,16 @@ class COVAFactory:
             plugins = [plugins_path]
 
         for plugin_file in plugins:
-            plugin, module_name = COVAFactory._load_plugin(plugin_file)
-
+            try:
+                plugin, module_name = COVAFactory._load_plugin(plugin_file)
+            except ModuleNotFoundError:
+                continue
             # Check that no other plugin had the same name.
             conflict_by_class = False
             try:
                 assert self._plugins_by_class.get(plugin.__name__, None) is None
+            except AttributeError:
+                continue
             except AssertionError:
                 conflict_by_class = True
                 msg = (
@@ -138,7 +156,9 @@ class COVAAutoTune(COVAPipeline):
         self.factory = COVAFactory()
         self.pipeline = {}
 
-    def load_pipeline(self, pipeline_config: dict, single_stage: str = None) -> None:
+    def load_pipeline(
+        self, pipeline_config: dict, single_stage: Optional[str] = None
+    ) -> None:
         """Loads a pipeline as defined in the input dictionary pipeline_config,
         which the configuration for each stage defined in the pipeline.
 
@@ -196,17 +216,23 @@ class COVAAutoTune(COVAPipeline):
         dataset_path = self.pipeline["dataset"].generate(images_path, annotations_path)
         self.pipeline["train"].train(dataset_path)
 
-    def run_stage(self, stage: str, config: List = None) -> None:
+    def run_stage(self, stage: str, config: Optional[list] = None) -> None:
         """Runs a single stage instead of the full pipeline.
 
         Args:
             stage (str): Stage to run
             config (dict): Dictionary containing the configuration required by the stage, if any. Defaults to None
+
+        Raises:
+            ValueError: If the the stage requires configuration and is missing (e.g. dataset or train).
         """
         if stage == "annotate":
             images_path, annotations_path = self.pipeline["annotate"].epilogue()
             logger.info("images stored in %s", images_path)
             logger.info("annotations stored in %s", annotations_path)
+        elif config is None:
+            logger.error("Missing configuration for stage %s", stage)
+            raise ValueError("Missing configuration for stage %s", stage)
         elif stage == "dataset":
             images_path = config[0]
             annotations_path = config[1]
@@ -231,7 +257,7 @@ class COVACapture(ABC):
 
 class COVAFilter(ABC):
     @abstractmethod
-    def filter(self, img) -> List[Any]:
+    def filter(self, img) -> list[Any]:
         """Processes one image."""
         raise NotImplementedError
 

@@ -3,12 +3,12 @@
 
 import copy
 import os
+from typing import Optional
 
 import tensorflow.compat.v2 as tf
-from object_detection import inputs
-from object_detection import model_lib_v2
-from object_detection.utils import config_util
+from object_detection import inputs, model_lib_v2
 from object_detection.builders import model_builder
+from object_detection.utils import config_util
 
 
 def eval_continuously(
@@ -19,7 +19,6 @@ def eval_continuously(
     wait_interval: int = 180,
     eval_timeout: int = 3600,
 ):
-
     tf.config.set_soft_device_placement(True)
 
     print(f"[EVAL] Strating evaluation on {checkpoint_dir}")
@@ -40,8 +39,8 @@ def eager_eval_loop(
     pipeline_config_path: str,
     eval_dataset: str,
     model_dir: str,
-    label_map: dict = None,
-    ckpt_id: str = None,
+    label_map: Optional[dict] = None,
+    ckpt_id: Optional[str] = None,
 ):
     """Run continuous evaluation of a detection model eagerly.
 

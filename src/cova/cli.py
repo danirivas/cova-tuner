@@ -18,7 +18,6 @@ import logging
 
 from cova.cli_helper import _run
 
-
 logger = logging.getLogger(__name__)
 
 

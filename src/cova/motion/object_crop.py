@@ -1,22 +1,23 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+# mypy: ignore-errors
 
 """This module implements methods to perform object-level scheduling through cropping and merge of objects"""
 
-from copy import deepcopy
-from dataclasses import dataclass
-from enum import Enum
 import logging
 import math
 import os
 import sys
-from typing import Dict, List, Tuple, Optional
+from copy import deepcopy
+from dataclasses import dataclass
+from enum import Enum
+from typing import Dict, List, Optional, Tuple
 
 import cv2
 import numpy as np
 
-from cova.motion.motion_detector import resize_if_smaller, merge_overlapping_boxes
 from cova.dnn import metrics
+from cova.motion.motion_detector import BoundingBox
 
 logger = logging.getLogger(__name__)
 
@@ -28,7 +29,7 @@ class MovingObject:
     cam_id: int  # camera identifier
     frame_id: int  # frame number. Relative to the camera
     obj_id: int  # object identifier. Relative to the list of objects within an inference.
-    box: list  # bounding box coordinates
+    box: BoundingBox  # bounding box coordinates
     inf_box: list  # coordinates within inference matrix
     border: list  # border size on each coordinate
 
@@ -51,11 +52,12 @@ class MergeHeuristic(Enum):
     FIRST_FIT_DECREASING_ONE_DIM = 4
 
 
-def first_fit_decreasing(img, objects: list):
+# FIXME: This doesn't look right...
+def first_fit_decreasing(img, objects: list[MovingObject]):
     # sort boxes based on area in decreasing order
     objects.sort(key=lambda x: x.area, reverse=True)
 
-    max_dim = max([sum([(x[2 + dim] - x[0 + dim]) for x in boxes]) for dim in [0, 1]])
+    max_dim = max([sum([(x[2 + dim] - x[0 + dim]) for x in objects]) for dim in [0, 1]])
 
     # Initialize output matrix with all 0's (black)
     result = np.zeros((max_dim, max_dim, 3))
@@ -261,7 +263,6 @@ def combine_streams(
 
 
 def combine_boxes(objects: list, heuristic=MergeHeuristic.FIRST_FIT_DECREASING):
-
     xlim = math.sqrt(sum([obj.area() for obj in objects]))
     prev_solution = {
         "area": np.inf,
@@ -421,7 +422,6 @@ def prediction_to_object(
     objects: List[MovingObject],
     object_map: Optional[List[List[np.uint8]]] = None,
 ) -> Tuple[MovingObject]:
-
     if object_map is None:
         max_iou = [0, None]
         for obj in objects:
@@ -510,7 +510,6 @@ def translate_to_frame_coordinates(
     objects: List[MovingObject],
     min_overlap: float = 0,
 ) -> Tuple[int, int, int, int]:
-
     # 1. Obtain the object that matches the predicted bounding box.
     obj = prediction_to_object(predicted, objects, object_map=object_map)
     if obj is None:

@@ -1,16 +1,15 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from __future__ import division
-from __future__ import print_function
-from __future__ import absolute_import
+from __future__ import absolute_import, division, print_function
 
-from collections import namedtuple
 import io
+import json
 import logging
 import os
+from collections import namedtuple
 from pathlib import Path
-import json
+from typing import Optional
 
 import cv2
 import numpy as np
@@ -19,7 +18,7 @@ from PIL import Image
 
 try:
     import tensorflow.compat.v1 as tf
-except:
+except ImportError:
     logging.warning(
         "TensorFlow module could not be loaded."
         "Ignore if not using any of the functions to generate TFRecords."
@@ -28,7 +27,7 @@ except:
 
 try:
     from object_detection.utils import dataset_util
-except:
+except ImportError:
     logging.warning(
         "Object Detection API could not be loaded."
         "Ignore if not using any of the functions to generate TFRecords."
@@ -140,7 +139,10 @@ def generate_tfrecord(
 
 
 def generate_joint_tfrecord(
-    output_path: str, images_dirs: str, csv_inputs: list, label_map: dict = None
+    output_path: str,
+    images_dirs: str,
+    csv_inputs: list,
+    label_map: Optional[dict] = None,
 ):
     """Generate TFRecord dataset from a list of csv files with detections.
 
@@ -166,7 +168,6 @@ def generate_joint_tfrecord(
 
 
 def add_example_to_record(writer, image, data, to_rgb=True, encoding="jpeg"):
-
     data = np.array(data)
     classes = [int(c) for c in data[:, 0]]
     labels = [l.encode("utf-8") for l in data[:, 1]]

@@ -1,28 +1,25 @@
 import base64
-from collections import namedtuple
-from concurrent.futures import ThreadPoolExecutor
 import json
-import requests
 import sys
 import time
+from collections import namedtuple
+from concurrent.futures import ThreadPoolExecutor
+from dataclasses import dataclass, field
 
 import cv2
 import numpy as np
+import requests
 
 from cova.pipeline.pipeline import COVAAnnotate
 
-if sys.version_info.major == 3 and sys.version_info.minor >= 7:
-    Request = namedtuple(
-        "Request",
-        ["img", "id", "results", "ts_in", "ts_out"],
-        defaults=[-1, time.time(), []],
-    )
-else:
-    Request = namedtuple(
-        "Request",
-        ["img", "id", "results", "ts_in", "ts_out"],
-    )
-    Request.__new__.__defaults__ = (-1, time.time(), [])
+
+@dataclass
+class Request:
+    img: np.array
+    id: int = -1
+    results: list = field(default_factory=list)
+    ts_in: float = time.time()
+    ts_out: float = -1
 
 
 class FlaskAnnotator(COVAAnnotate):
@@ -40,10 +37,21 @@ class FlaskAnnotator(COVAAnnotate):
         port: Port to connect to the server.
     """
 
-    def __init__(self, url: str, port: int = 6000):
-        """Init EdgeClient with url and port to connect to the server."""
-        self._url = url
-        self._port = port
+    pending: list[Request]
+    processed: list[Request]
+    num_reqs: int
+    url: str
+    port: int
+
+    def __init__(self, url: str, port: int = 6000) -> None:
+        """Init EdgeClient with url and port to connect to the server.
+
+        Args:
+            url (str): Server's url.
+            port (int, optional): Port to connect to the server. Defaults to 6000.
+        """
+        self.url = url
+        self.port = port
         self.num_reqs = 0
         self.pending = []
         self.processed = []
@@ -64,7 +72,7 @@ class FlaskAnnotator(COVAAnnotate):
         buf = FlaskAnnotator._encode_img(img, "." + encoding)
         img64 = base64.b64encode(buf)
 
-        req_url = f"{self._url}:{self._port}/infer"
+        req_url = f"{self.url}:{self.port}/infer"
         try:
             r = requests.post(
                 req_url,
@@ -78,7 +86,7 @@ class FlaskAnnotator(COVAAnnotate):
 
         return FlaskAnnotator._process_response(r)
 
-    def post_request(self, request: Request):
+    def post_request(self, request: Request) -> Request:
         """Post infer with request's image.
 
         Args:
@@ -87,14 +95,14 @@ class FlaskAnnotator(COVAAnnotate):
         Returns:
             Request: Request with the results of the annotation.
         """
-        img = request["image"]
+        img = request.img
         ret, results = self.post_infer(img)
         if ret:
-            request["results"] = results
-            request["ts_out"] = time.time()
+            request.results = results
+            request.ts_out = time.time()
         return request
 
-    def process(self, img: np.array) -> None:
+    def annotate(self, img: np.array) -> None:
         """Append image to pending requests.
 
         Args:
@@ -121,4 +129,11 @@ class FlaskAnnotator(COVAAnnotate):
 
             for _, req in enumerate(results):
                 self.pending.remove(req)
-                yield req["id"], req["image"], req["results"]
+                yield req.id, req.img, req.results
+
+    def epilogue(self):
+        for id, img, results in self.process_pending():
+            print(id)
+            print(img)
+            print(results)
+            break
