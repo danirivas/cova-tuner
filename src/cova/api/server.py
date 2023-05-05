@@ -4,15 +4,11 @@
 import argparse
 import base64
 import json
-import sys
-import tempfile
-import time
 from typing import Optional
 
 import cv2
 import numpy as np
 import pandas as pd
-import tensorflow as tf
 from flask import Flask, Response
 from flask_restful import Api, Resource, reqparse
 

@@ -5,7 +5,6 @@
 
 from abc import ABC, abstractmethod
 from enum import Enum
-from logging import BASIC_FORMAT
 from typing import Optional, TypeAlias
 
 import cv2
@@ -291,8 +290,10 @@ class MotionDetector:
         Args:
         background (Background): Background object to obtain background of the scene.
         delta_threshold (int, optional): threshold for delta over frame difference. Defaults to 25.
-        min_area_contour (int, optional): Minimum area (in pixels) for a contour to be considered as actual "motion" and for region proposal. Defaults to 500.
-        roi_size (tuple, optional): Minimum size of a region. If a contour is smaller, the bounding box of the region is expanded. Defaults to (1,1).
+        min_area_contour (int, optional): Minimum area (in pixels) for a contour to be considered
+            as actual "motion" and for region proposal. Defaults to 500.
+        roi_size (tuple, optional): Minimum size of a region. If a contour is smaller,
+            the bounding box of the region is expanded. Defaults to (1,1).
         merge_rois (bool, optional): Merge overlapping regions. Defaults to True.
         """
 
@@ -311,9 +312,10 @@ class MotionDetector:
             - 1. First, we update the background image with the current frame.
             - 2. Then, we compute GaussianBlur of the current frame.
             - 3. Compute the absolute difference between the current frame and the background.
-            - 4. We apply a cv2.THRESH_BINARY operation to the absolute difference to filter out small (in intensity) differences.
+            - 4. We apply a cv2.THRESH_BINARY operation to the absolute difference to filter out small differences.
             - 5. Then, we dilate the thresholded image to fill in holes.
-            - 6. Finally, we use cv2.findContours on the thresholded image to find the regions of the changed regions. Contours smaller than min_area are ignored.
+            - 6. Finally, we use cv2.findContours on the thresholded image to find the regions of the changed regions.
+                Contours smaller than min_area are ignored.
 
         Note: Dilation operation (opposite to erosion). A pixel element is '1'
         if at least one pixel under the kernel is '1'. So it increases

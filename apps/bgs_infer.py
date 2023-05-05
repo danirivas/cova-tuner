@@ -106,8 +106,6 @@ def main():
         help="Background subtraction method (KNN, MOG2).",
         default="mog",
     )
-    # parser.add_argument('--gt', type=str, help='Path to ground-truth.')
-    # parser.add_argument('--bgs', type=str, help='Path to BGS results.')
     parser.add_argument(
         "--show", default=False, action="store_true", help="Show window with results."
     )
@@ -132,8 +130,6 @@ def main():
     cap = cv2.VideoCapture(args.video)
     video_width = cap.get(cv2.CAP_PROP_FRAME_WIDTH)
     video_height = cap.get(cv2.CAP_PROP_FRAME_HEIGHT)
-    # video_width = 1280
-    # video_height = 720
     max_boxes = 100
 
     detection_results = []
@@ -152,13 +148,7 @@ def main():
         "roi_ymax",
     ]
 
-    # gt_fn = os.path.join(Path(args.input).video, '../annotations', Path(args.video).stem + '.viratdata.objects.txt')
-    # gt = read_virat(gt_fn)
     bgs = pd.read_csv(os.path.join(os.getcwd(), f"{Path(args.video).stem}_rois.csv"))
-
-    # We don't consider the first 500 frames
-    # gt = gt[gt.current_frame >= 500]
-    # bgs = bgs[bgs.frame_id >= 500]
 
     colors = {
         "full_frame": (255, 0, 0),
@@ -183,7 +173,6 @@ def main():
         ret, frame = cap.read()
         frame_bgr = frame
         frame_rgb = cv2.cvtColor(frame.copy(), cv2.COLOR_BGR2RGB)
-        # import pdb; pdb.set_trace()
 
         composed_frames = [cv2.resize(frame.copy(), (300, 300))]
         composed_frames_rgb = [cv2.resize(frame_rgb.copy(), (300, 300))]
@@ -208,10 +197,7 @@ def main():
                 ymin = int(roi[1] * video_height)
                 xmax = int(roi[2] * video_width)
                 ymax = int(roi[3] * video_height)
-                # cropped_rois.append(np.array(frame[ymin:ymax, xmin:xmax]))
                 rois_proposed.append([xmin, ymin, xmax, ymax])
-                # print(f'roi: {rois_proposed[-1]}')
-                # draw_detection(frame=frame_bgr, box=rois_proposed[-1], label=method, score=1, color=(255, 0, 0))
 
             combined_width = sum(roi[2] - roi[0] for roi in rois_proposed)
             combined_height = sum(roi[3] - roi[1] for roi in rois_proposed)
@@ -231,12 +217,9 @@ def main():
                     new_box = resize_if_smaller(
                         roi, max_dims=(video_width, video_height), min_size=new_size
                     )
-                    # print(f'new roi: {new_box}')
 
                     rois_proposed[roi_id] = new_box
-                    # draw_detection(frame=frame_bgr, box=new_box, label=method, score=1, color=(0, 255, 0))
 
-            # if method == 'gt':
             rois_proposed = merge_overlapping_boxes(rois_proposed)
 
             # Check area covered by RoIs proposed. If > 80% of the frame, just use the whole frame.
@@ -246,16 +229,13 @@ def main():
             if area_rois > (video_width * video_height) * 0.8:
                 row = [frame_id, method] + [-1] * 10
                 detection_results.append([row])
-                print(f"RoIs take more than 80% of the frame. Skipping")
+                print("RoIs take more than 80% of the frame. Skipping")
                 continue
 
             composed_frame = None
             object_map = None
             objects = []
 
-            # import pdb; pdb.set_trace()
-
-            # ts0_crop = time.time()
             composed_frame, object_map, objects = crop.combine_border(
                 [frame],
                 [rois_proposed],
@@ -271,7 +251,6 @@ def main():
                 min_combined_size=(300, 300),
                 max_dims=(video_width, video_height),
             )
-            # import pdb; pdb.set_trace()
             composed_frames.append(
                 cv2.resize(composed_frame, (300, 300)).astype("uint8")
             )
@@ -281,25 +260,6 @@ def main():
             object_maps.append(object_map)
             object_lists.append(objects)
             cf2method.append(method)
-            # regions_proposed = [[0, 0, composed_frame.shape[1]-1, composed_frame.shape[0]-1]]
-            # ts1_crop = time.time()
-            # total_crop_time = ts1_crop - ts0_crop
-
-        # if args.show:
-        #     for i, method in enumerate(cf2method):
-        #         cv2.imshow(method, composed_frames[i])
-
-        #         if method != 'full_frame':
-        #             cv2.setWindowTitle(method, f'{method} ({object_maps[i].shape[1]}x{object_map[i].shape[0]})')
-
-        #     cv2.imshow('Full Frame', frame_bgr)
-        #     key = cv2.waitKey(1) & 0xFF
-        #     if key == ord("q"):
-        #         sys.exit(1)
-
-        # time.sleep(2)
-
-        # continue
 
         ts0_infer = time.time()
         results = model.run(composed_frames_rgb)
@@ -308,7 +268,6 @@ def main():
         print(
             f"[{frame_id}] Took {infer_latency:.2f} seconds to process {len(composed_frames)} frames ({1/infer_latency:.2f} fps) -> {cf2method}."
         )
-        # total_time_infer += (ts1_infer-ts0_infer)
 
         for method_id, method in enumerate(cf2method):
             object_map = object_maps[method_id]
@@ -475,17 +434,6 @@ def main():
                     print("new box is too different. Skipping")
                     continue
 
-                # (left, right, top, bottom) = (roi[0] + obj_coords[0], roi[0] + obj_coords[2],
-                #                                 roi[1] + obj_coords[1], roi[1] + obj_coords[3])
-                if (
-                    any([c < 0 for c in obj_coords])
-                    or obj_coords[2] > frame_bgr.shape[1]
-                    or obj_coords[3] > frame_bgr.shape[0]
-                ):
-                    import pdb
-
-                    pdb.set_trace()
-
                 (left, top, right, bottom) = obj_coords
 
                 detection_results.append(
@@ -521,9 +469,6 @@ def main():
                     color=colors[method],
                 )
 
-                # ts1_decode_infer = time.time()
-                # total_decode_infer = ts1_decode_infer - ts0_decode_infer
-
             if args.write:
                 cv2.imwrite(
                     os.path.join(
@@ -533,8 +478,7 @@ def main():
                     ),
                     composed_frame,
                 )
-            # import pdb; pdb.set_trace()
-            # composed_frame = cv2.cvtColor(np.float32(composed_frame), cv2.COLOR_RGB2BGR)
+
             if args.show:
                 cv2.imshow(method, composed_frame)
                 if method != "full_frame":
@@ -547,10 +491,6 @@ def main():
                 if key == ord("q"):
                     sys.exit(1)
 
-            # if frame_id == 50:
-            #     import pdb; pdb.set_trace()
-
-    # import pdb; pdb.set_trace()
     detection_results = pd.DataFrame(detection_results, columns=columns)
     detection_results.to_csv(
         f"{Path(args.video).stem}_detections.csv", index=False, sep=","

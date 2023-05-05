@@ -170,7 +170,7 @@ def generate_joint_tfrecord(
 def add_example_to_record(writer, image, data, to_rgb=True, encoding="jpeg"):
     data = np.array(data)
     classes = [int(c) for c in data[:, 0]]
-    labels = [l.encode("utf-8") for l in data[:, 1]]
+    labels = [label.encode("utf-8") for label in data[:, 1]]
     xmins = [float(x) for x in data[:, 2]]
     xmaxs = [float(x) for x in data[:, 3]]
     ymins = [float(y) for y in data[:, 4]]

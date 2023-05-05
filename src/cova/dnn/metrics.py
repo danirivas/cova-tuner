@@ -1,7 +1,6 @@
 from typing import Tuple
 
 import numpy as np
-import pandas as pd
 
 
 def get_overlap(
@@ -29,25 +28,22 @@ def get_overlap(
     return area_intersection / area_bb1
 
 
-def get_iou(bb1, bb2):
+def get_iou(bb1: dict[str, float], bb2: dict[str, float]) -> float:
     """
     Calculate the Intersection over Union (IoU) of two bounding boxes.
 
-    Parameters
-    ----------
-    bb1 : dict
-        Keys: {'x1', 'x2', 'y1', 'y2'}
-        The (x1, y1) position is at the top left corner,
-        the (x2, y2) position is at the bottom right corner
-    bb2 : dict
-        Keys: {'x1', 'x2', 'y1', 'y2'}
-        The (x, y) position is at the top left corner,
-        the (x2, y2) position is at the bottom right corner
+    Args:
+        bb1 (dict):
+            Keys: {'x1', 'x2', 'y1', 'y2'}
+            The (x1, y1) position is at the top left corner,
+            the (x2, y2) position is at the bottom right corner
+        bb2 (dict):
+            Keys: {'x1', 'x2', 'y1', 'y2'}
+            The (x, y) position is at the top left corner,
+            the (x2, y2) position is at the bottom right corner
 
-    Returns
-    -------
-    float
-        in [0, 1]
+    Returns:
+        float: in [0, 1]
     """
     assert isinstance(bb1, list) or isinstance(bb1, np.ndarray)
 
@@ -150,7 +146,7 @@ def compute_area_of_union(boxes):
     height = max([box[3] for box in boxes]) + 1
     canvas = np.zeros((width, height))
     for box in boxes:
-        canvas[box[1] : box[3], box[0] : box[2]] = 1
+        canvas[box[1]:box[3], box[0]:box[2]] = 1
 
     area_of_union = np.sum(canvas > 0)
     return area_of_union
@@ -162,7 +158,7 @@ def compute_area_of_intersect(boxes):
     height = max([box[3] for box in boxes])
     for box in boxes:
         canvas = np.zeros(width, height)
-        canvas[box[1] : box[3], box[0] : box[2]] = 1
+        canvas[box[1]:box[3], box[0]:box[2]] = 1
         canvases.append(canvas)
 
     area_of_intersect = np.sum(np.sum(canvases) > 1)

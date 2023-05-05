@@ -11,11 +11,9 @@ import sys
 
 import numpy as np
 import pandas as pd
-from tqdm import tqdm
 import imutils
 
 from cova.motion.motion_detector import (
-    non_max_suppression_fast,
     Background,
     BackgroundMethod,
     GaussianBlur,
@@ -145,9 +143,7 @@ columns = [
 df_rois = []
 columns_rois = ["frame_id", "method", "xmin", "ymin", "xmax", "ymax", "label"]
 
-# pbar = tqdm(total=int(total_frames), desc=str(Path(args.video).stem))
 for frame_id in range(int(total_frames)):
-    # pbar.update(1)
 
     ret, frame = capture.read()
     if not ret:

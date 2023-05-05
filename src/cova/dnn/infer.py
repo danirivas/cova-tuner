@@ -29,8 +29,8 @@ except ImportError:
     logger.warning("IECore could not be loaded. Ignore if not using OpenVINO models.")
     pass
 
-from cova.dnn.dataset import get_dataset_labels
-from cova.dnn.tools import load_model, load_pbtxt
+from cova.dnn.dataset import get_dataset_labels  # noqa: E402
+from cova.dnn.tools import load_model, load_pbtxt  # noqa: E402
 
 
 class Model(ABC):
@@ -221,15 +221,21 @@ class ModelIE(Model):
 
     @staticmethod
     def decode_rcnn_results(results: dict, min_score: float) -> tuple[list, list, list]:
-        """Decodes results from RCNN architecture such as:
+        """Decode results from RCNN architecture.
 
-        1. The boxes is a blob with the shape 100, 5 in the format N, 5, where N is the number of detected bounding boxes. For each detection, the description has the format [x_min, y_min, x_max, y_max, conf], where:
+        Format of the results:
+        1. The boxes is a blob with the shape (100, 5) in the format (N, 5),
+            where N is the number of detected bounding boxes.
+            For each detection, the description has the format
+            [x_min, y_min, x_max, y_max, conf], where:
 
             - (x_min, y_min) - coordinates of the top left bounding box corner.
             - (x_max, y_max) - coordinates of the bottom right bounding box corner
             - conf - confidence for the predicted class
 
-        2. The labels is a blob with the shape 100 in the format N, where N is the number of detected bounding boxes. It contains predicted class ID (0 - person) per each detected box.
+        2. The labels is a blob with the shape 100 in the format N,
+            where N is the number of detected bounding boxes.
+            It contains predicted class ID (0 - person) per each detected box.
         """
         boxes = []
         scores = []

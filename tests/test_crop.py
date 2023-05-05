@@ -63,16 +63,16 @@ def objects_with_placement(boxes, objects_placement, border):
 def object_map(objects_placement):
     object_map = np.zeros((150, 240))
     object_map[
-        objects_placement[0][1] : objects_placement[0][3],
-        objects_placement[0][0] : objects_placement[0][2],
+        objects_placement[0][1]:objects_placement[0][3],
+        objects_placement[0][0]:objects_placement[0][2],
     ] = 1
     object_map[
-        objects_placement[1][1] : objects_placement[1][3],
-        objects_placement[1][0] : objects_placement[1][2],
+        objects_placement[1][1]:objects_placement[1][3],
+        objects_placement[1][0]:objects_placement[1][2],
     ] = 2
     object_map[
-        objects_placement[2][1] : objects_placement[2][3],
-        objects_placement[2][0] : objects_placement[2][2],
+        objects_placement[2][1]:objects_placement[2][3],
+        objects_placement[2][0]:objects_placement[2][2],
     ] = 3
     return object_map
 

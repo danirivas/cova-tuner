@@ -70,13 +70,13 @@ class AWSDataset(COVADataset):
         images_path_parts = Path(images_path).parts
         bucket_index = images_path_parts.index(self.s3_config["bucket"])
         self.s3_config["images_prefix"] = "/".join(
-            images_path_parts[bucket_index + 1 :]
+            images_path_parts[bucket_index + 1:]
         )
 
         annotations_path_parts = Path(annotations_path).parts
         bucket_index = annotations_path_parts.index(self.s3_config["bucket"])
         self.s3_config["annotations_prefix"] = "/".join(
-            annotations_path_parts[bucket_index + 1 :]
+            annotations_path_parts[bucket_index + 1:]
         )
 
         self.generate_manifest()

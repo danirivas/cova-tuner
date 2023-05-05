@@ -1,4 +1,4 @@
-"""This module implements AWSAnnotation, a COVAAnnotate subclass, that annotates a dataset using AWS Sagemaker after uploading images to an S3 bucket."""
+"""This module implements AWSAnnotation (COVAAnnotate) subclass, that annotates a dataset using AWS Sagemaker."""
 
 import io
 import logging

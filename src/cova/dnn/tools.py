@@ -174,11 +174,11 @@ def load_pbtxt(filename):
         lines = f.readlines()
 
     label = ""
-    for l in lines:
-        if "name" in l:
-            label = l.split('"')[1]
-        elif "id" in l:
-            class_id = int(l.split(":")[1])
+    for line in lines:
+        if "name" in line:
+            label = line.split('"')[1]
+        elif "id" in line:
+            class_id = int(line.split(":")[1])
             label_map[class_id] = {"name": label, "id": class_id}
 
     return label_map

@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 # mypy: ignore-errors
+# flake8: noqa
 
 """This module implements methods to perform object-level scheduling through cropping and merge of objects"""
 
@@ -11,7 +12,7 @@ import sys
 from copy import deepcopy
 from dataclasses import dataclass
 from enum import Enum
-from typing import Dict, List, Optional, Tuple
+from typing import Optional
 
 import cv2
 import numpy as np
@@ -60,7 +61,7 @@ def first_fit_decreasing(img, objects: list[MovingObject]):
     max_dim = max([sum([(x[2 + dim] - x[0 + dim]) for x in objects]) for dim in [0, 1]])
 
     # Initialize output matrix with all 0's (black)
-    result = np.zeros((max_dim, max_dim, 3))
+    # result = np.zeros((max_dim, max_dim, 3))
     x_lim = 0
     y_lim = 0
     x_occupancy = [0]
@@ -201,20 +202,20 @@ def merge(img, boxes: list, heuristic=MergeHeuristic.FIRST_FIT_DECREASING):
         roi = obj.box
         inf_roi = obj.inf_box
 
-        img_shape = img[roi[1] : roi[3], roi[0] : roi[2]].shape
+        img_shape = img[roi[1]:roi[3], roi[0]:roi[2]].shape
         merged_shape = merged_img[
-            inf_roi[1] : inf_roi[3], inf_roi[0] : inf_roi[2]
+            inf_roi[1]:inf_roi[3], inf_roi[0]:inf_roi[2]
         ].shape
         if img_shape != merged_shape:
             import pdb
 
             pdb.set_trace()
 
-        cropped_object = img[roi[1] : roi[3], roi[0] : roi[2]].copy()
+        cropped_object = img[roi[1]:roi[3], roi[0]:roi[2]].copy()
         merged_img[
-            inf_roi[1] : inf_roi[3], inf_roi[0] : inf_roi[2], :3
+            inf_roi[1]:inf_roi[3], inf_roi[0]:inf_roi[2], :3
         ] = cropped_object
-        object_map[inf_roi[1] : inf_roi[3], inf_roi[0] : inf_roi[2]] = obj.obj_id + 1
+        object_map[inf_roi[1]:inf_roi[3], inf_roi[0]:inf_roi[2]] = obj.obj_id + 1
 
     objects.sort(key=lambda x: x.obj_id)
     return merged_img, object_map, objects
@@ -243,20 +244,20 @@ def combine_streams(
         roi = obj.box
         inf_roi = obj.inf_box
 
-        img_shape = frame[roi[1] : roi[3], roi[0] : roi[2]].shape
+        img_shape = frame[roi[1]:roi[3], roi[0]:roi[2]].shape
         merged_shape = merged_img[
-            inf_roi[1] : inf_roi[3], inf_roi[0] : inf_roi[2]
+            inf_roi[1]:inf_roi[3], inf_roi[0]:inf_roi[2]
         ].shape
         if img_shape != merged_shape:
             import pdb
 
             pdb.set_trace()
 
-        cropped_object = frame[roi[1] : roi[3], roi[0] : roi[2]].copy()
+        cropped_object = frame[roi[1]:roi[3], roi[0]:roi[2]].copy()
         merged_img[
-            inf_roi[1] : inf_roi[3], inf_roi[0] : inf_roi[2], :3
+            inf_roi[1]:inf_roi[3], inf_roi[0]:inf_roi[2], :3
         ] = cropped_object
-        object_map[inf_roi[1] : inf_roi[3], inf_roi[0] : inf_roi[2]] = obj.obj_id + 1
+        object_map[inf_roi[1]:inf_roi[3], inf_roi[0]:inf_roi[2]] = obj.obj_id + 1
 
     objects.sort(key=lambda x: x.obj_id)
     return merged_img, object_map, objects
@@ -327,11 +328,10 @@ def combine_border(
         roi = obj.box
         inf_roi = obj.inf_box
 
-        roi_shape = frame[roi[1] : roi[3], roi[0] : roi[2]].shape
         merged_shape = merged_img[
-            inf_roi[1] : inf_roi[3], inf_roi[0] : inf_roi[2]
+            inf_roi[1]:inf_roi[3], inf_roi[0]:inf_roi[2]
         ].shape
-        cropped_object = frame[roi[1] : roi[3], roi[0] : roi[2]].copy()
+        cropped_object = frame[roi[1]:roi[3], roi[0]:roi[2]].copy()
         crop_with_border = cv2.copyMakeBorder(
             cropped_object,
             obj.border[1],
@@ -346,11 +346,11 @@ def combine_border(
 
             pdb.set_trace()
         merged_img[
-            inf_roi[1] : inf_roi[3], inf_roi[0] : inf_roi[2], :3
+            inf_roi[1]:inf_roi[3], inf_roi[0]:inf_roi[2], :3
         ] = crop_with_border
         object_map[
-            (inf_roi[1] + obj.border[1]) : (inf_roi[3] - obj.border[3]),
-            (inf_roi[0] + obj.border[0]) : (inf_roi[2] - obj.border[2]),
+            (inf_roi[1] + obj.border[1]):(inf_roi[3] - obj.border[3]),
+            (inf_roi[0] + obj.border[0]):(inf_roi[2] - obj.border[2]),
         ] = (
             obj.obj_id + 1
         )
@@ -388,12 +388,12 @@ def combine_resize(
         roi = all_boxes[obj.obj_id]
         inf_roi = obj.inf_box
 
-        img_shape = frame[roi[1] : roi[3], roi[0] : roi[2]].shape
+        img_shape = frame[roi[1]:roi[3], roi[0]:roi[2]].shape
         merged_shape = merged_img[
-            inf_roi[1] : inf_roi[3], inf_roi[0] : inf_roi[2]
+            inf_roi[1]:inf_roi[3], inf_roi[0]:inf_roi[2]
         ].shape
         cropped_object = cv2.resize(
-            frame[roi[1] : roi[3], roi[0] : roi[2]].copy(), roi_size
+            frame[roi[1]:roi[3], roi[0]:roi[2]].copy(), roi_size
         )
         crop_with_border = cv2.copyMakeBorder(
             cropped_object,
@@ -409,19 +409,19 @@ def combine_resize(
 
             pdb.set_trace()
         merged_img[
-            inf_roi[1] : inf_roi[3], inf_roi[0] : inf_roi[2], :3
+            inf_roi[1]:inf_roi[3], inf_roi[0]:inf_roi[2], :3
         ] = crop_with_border
-        object_map[inf_roi[1] : inf_roi[3], inf_roi[0] : inf_roi[2]] = obj.obj_id + 1
+        object_map[inf_roi[1]:inf_roi[3], inf_roi[0]:inf_roi[2]] = obj.obj_id + 1
 
     objects.sort(key=lambda x: x.obj_id)
     return merged_img, object_map, objects
 
 
 def prediction_to_object(
-    predicted: Tuple[int, int, int, int],
-    objects: List[MovingObject],
-    object_map: Optional[List[List[np.uint8]]] = None,
-) -> Tuple[MovingObject]:
+    predicted: tuple[int, int, int, int],
+    objects: list[MovingObject],
+    object_map: Optional[list[list[np.uint8]]] = None,
+) -> Optional[MovingObject]:
     if object_map is None:
         max_iou = [0, None]
         for obj in objects:
@@ -458,8 +458,8 @@ def prediction_to_object(
 
 
 def adjust_predicted_to_object_placement(
-    predicted: Tuple[int, int, int, int], object: MovingObject
-) -> Tuple[int, int, int, int]:
+    predicted: tuple[int, int, int, int], object: MovingObject
+) -> tuple[int, int, int, int]:
     """Adjustes the predicted bounding box and moves its coordinates within the object's box within the composed frame,
     i.e., returns a bounding box contained completely within the object (no borders).
     Returns None if predicted and object's box do not overlap."""
@@ -481,8 +481,8 @@ def adjust_predicted_to_object_placement(
 
 
 def translate_to_object_coordinates(
-    predicted: Tuple[int, int, int, int], object: MovingObject
-) -> Tuple[int, int, int, int]:
+    predicted: tuple[int, int, int, int], object: MovingObject
+) -> tuple[int, int, int, int]:
     """Returns predicted coordinates translated using the object's origin as their origin.
     Pre-requisit: predicted coordinates are within object.inf_box.
     """
@@ -505,11 +505,11 @@ def translate_to_object_coordinates(
 
 
 def translate_to_frame_coordinates(
-    predicted: Tuple[int, int, int, int],
-    object_map: List[List[np.uint8]],
-    objects: List[MovingObject],
+    predicted: tuple[int, int, int, int],
+    object_map: list[list[np.uint8]],
+    objects: list[MovingObject],
     min_overlap: float = 0,
-) -> Tuple[int, int, int, int]:
+) -> tuple[int, int, int, int]:
     # 1. Obtain the object that matches the predicted bounding box.
     obj = prediction_to_object(predicted, objects, object_map=object_map)
     if obj is None:

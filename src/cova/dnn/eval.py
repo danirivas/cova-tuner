@@ -32,7 +32,7 @@ def eval_continuously(
         wait_interval=wait_interval,
         timeout=eval_timeout,
     )
-    print(f"[EVAL] Finished evaluation")
+    print("[EVAL] Finished evaluation")
 
 
 def eager_eval_loop(

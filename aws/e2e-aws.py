@@ -16,7 +16,6 @@ import tqdm
 
 import boto3
 import sagemaker
-from sagemaker import get_execution_role
 from sagemaker import ModelPackage
 from sagemaker.tensorflow import TensorFlow
 from sagemaker.debugger import TensorBoardOutputConfig
@@ -33,7 +32,7 @@ logging.basicConfig(level="INFO")
 
 
 def load_config(args):
-    args = {k: v for k, v in args.items() if not v is None}
+    args = {k: v for k, v in args.items() if v is not None}
     config = configparser.ConfigParser(
         converters={"list": lambda x: [i.strip() for i in x.split(",")]}
     )
@@ -102,16 +101,18 @@ def capture_aws(
         streams_list (Tuple[str]): List of input streams from which to capture images.
         bucket (str): name of the S3 bucket where selected images are saved.
         key_prefix (str): key prefix inside bucket where selected images are saved.
-        resize (Tuple[int,int], optional): resolution to which frames are resized before being saved. Defaults to (1280, 720).
-        crop_motion (bool, optional): select and save cropped regions with motion or full frames. Defaults to False (full frames used).
-        valid_classes (str, optional): Comma-separated list of classes to detect. If None, all classes will be considered during annotation. Defaults to None
-        framerate (int, optional): Rate at which frames at capture from the stream (in frames per second). Defaults to 1.
-        warmup (int, optional): Warmup period (in seconds) in which captured frames are used to initialize the background model. Defaults to 5.
+        resize (Tuple[int,int], optional): resize resolution before saving the frames. Defaults to (1280, 720).
+        crop_motion (bool, optional): whether to save cropped regions or full frames. Defaults to False.
+        valid_classes (str, optional): Comma-separated list of classes to detect.
+            If None, all classes will be considered during annotation. Defaults to None
+        framerate (int, optional): capture framerate (fps). Defaults to 1.
+        warmup (int, optional): Warmup period (in seconds) to initialize the background model. Defaults to 5.
         max_images (int, optional): Stop when maximum is reached. Defaults to 1000.
-        min_images (int, optional): Prevents timeout to stop execution if the minimum of images has not been reached. Used only if timeout > 0. Defaults to 0.
+        min_images (int, optional): Prevents timeout to stop execution if the minimum of images has not been reached.
+            Used only if timeout > 0. Defaults to 0.
         min_area (int, optional): Minimum area for countours to be considered as actual movement. Defaults to 1000.
-        timeout (int, optional): Timeout for capture. When reached, capture stops unless there is a minimum of images enforced. Defaults to 0.
-        no_show (bool, optional): Do not show window with captured frames and bounding boxes with motion. Defaults to True.
+        timeout (int, optional): Timeout for capture. When reached, capture stops unless min_images > 0. Defaults to 0.
+        no_show (bool, optional): Do not show window with live stream. Defaults to True.
     """
 
     client = AWSClient(bucket=bucket, key_prefix=key_prefix)
@@ -156,7 +157,7 @@ def capture_aws(
             if crop_motion:
                 for _, roi in enumerate(regions_proposed):
                     imgs_to_upload.append(
-                        np.array(frame[roi[1] : roi[3], roi[0] : roi[2]])
+                        np.array(frame[roi[1]:roi[3], roi[0]:roi[2]])
                     )
 
             elif len(regions_proposed):
@@ -201,7 +202,7 @@ def capture_aws(
         logger.info(f"Uploaded {num_selected_images} from stream {Path(stream).stem}")
 
 
-## Auxiliary Functions
+# Auxiliary Functions
 def deploy_model(
     role,
     num_instances,
@@ -498,7 +499,8 @@ def main():
     config = vars(args.parse_args())
     config = load_config(config)
 
-    # The session remembers our connection parameters to Amazon SageMaker. We'll use it to perform all of our Amazon SageMaker operations.
+    # The session remembers our connection parameters to Amazon SageMaker.
+    # We'll use it to perform all of our Amazon SageMaker operations.
     sagemaker_session = sagemaker.Session()
     bucket = sagemaker_session.default_bucket()
 
@@ -540,8 +542,8 @@ def main():
         role=config["aws"]["role"],
     )
 
-    train_data = tfrecord_prefix + "/train.records"
-    eval_data = tfrecord_prefix + "/validation.records"
+    # train_data = tfrecord_prefix + "/train.records"
+    # eval_data = tfrecord_prefix + "/validation.records"
     train_output = "s3://{}/{}/{}".format(bucket, prefix_key, "train")
     tensorboard_prefix = "s3://{}/{}/{}".format(bucket, prefix_key, "tensorboard")
     train(

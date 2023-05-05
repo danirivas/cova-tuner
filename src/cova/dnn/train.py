@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import copy
 import os
 import time
 from typing import Optional
@@ -99,8 +98,8 @@ def _compute_losses_and_predictions_dicts(
     losses = [loss_tensor for loss_tensor in losses_dict.values()]
     if add_regularization_loss:
         # TODO(kaftan): As we figure out mixed precision & bfloat 16, we may
-        ## need to convert these regularization losses from bfloat16 to float32
-        ## as well.
+        # need to convert these regularization losses from bfloat16 to float32
+        # as well.
         regularization_losses = model.regularization_losses()
         if regularization_losses:
             regularization_losses = ops.bfloat16_to_float32_nested(
@@ -257,6 +256,7 @@ def eager_train_step(
 
 # Modified version from model_lib_v2.py from the TF's OD API.
 # + trainable_layers
+# flake8: noqa: C901
 def train_loop(
     pipeline_config_path,
     model_dir,
@@ -305,7 +305,7 @@ def train_loop(
       performance_summary_exporter: function for exporting performance metrics.
       **kwargs: Additional keyword arguments for configuration override.
     """
-    ## Parse the configs
+    # Parse the configs
     steps_per_sec_list = []
 
     configs = config_util.get_configs_from_pipeline_file(
@@ -412,7 +412,7 @@ def train_loop(
         else:
             learning_rate_fn = lambda: learning_rate
 
-    ## Train the model
+    # Train the model
     # Get the appropriate filepath (temporary or not) based on whether the worker
     # is the chief.
     summary_writer_filepath = model_lib_v2.get_filepath(
@@ -537,7 +537,7 @@ def train_loop(
                             train_step_fn, args=(features, labels)
                         )
                     # TODO(anjalisridhar): explore if it is safe to remove the
-                    ## num_replicas scaling of the loss and switch this to a ReduceOp.Mean
+                    # num_replicas scaling of the loss and switch this to a ReduceOp.Mean
                     return strategy.reduce(
                         tf.distribute.ReduceOp.SUM, per_replica_losses, axis=None
                     )
