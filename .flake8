@@ -22,6 +22,8 @@ exclude =
     .cache,
     .eggs,
     data
+    # For the time being, we are not checking the apps directory
+    apps/
 max-line-length = 120
 max-complexity = 20
 import-order-style = pycharm
